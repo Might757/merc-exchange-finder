@@ -1,0 +1,22 @@
+# Chrome profile used by launcher.py — contains personal session data, never commit
+chrome_profile/
+
+# Generated at runtime
+scan_state.json
+logs/
+found_*.png
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
