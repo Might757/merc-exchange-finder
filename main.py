@@ -25,8 +25,9 @@ from scanner.grid_tracker import GridTracker
 from scanner.logger import log_find, get_log_path
 from config.settings import (
     CDP_URL,
-    PAN_STEP_X, PAN_STEP_Y, PAN_DELAY,
+    PAN_STEP_X, PAN_STEP_Y,
     SCAN_COLS, SCAN_ROWS,
+    SPEED_PRESETS,
 )
 
 _stop_flag = False
@@ -38,13 +39,14 @@ def _handle_sigint(sig, frame):
     _stop_flag = True
 
 
-def scan_grid(page, tracker: GridTracker):
+def scan_grid(page, tracker: GridTracker, speed: str = "Normal"):
     """
     Scan the world map in a raster pattern, skipping already-scanned cells.
     Saves state after each cell so a resume picks up where it left off.
     """
     global _stop_flag
     found_count = 0
+    min_w, max_w, _, _, _ = SPEED_PRESETS.get(speed, SPEED_PRESETS["Normal"])
 
     cols = SCAN_COLS or 20
     rows = SCAN_ROWS or 15
@@ -67,9 +69,7 @@ def scan_grid(page, tracker: GridTracker):
             print(f"[main] Scanning ({row},{col})  [{scanned}/{total}]  "
                   f"threshold={get_adaptive_threshold():.2f}")
 
-            time.sleep(PAN_DELAY)
-
-            frame = capture.screenshot_numpy()
+            frame = capture.wait_for_stable_frame(min_wait=min_w, max_wait=max_w)
             detections, raw_count = detect(frame)
 
             if raw_count > 0 and not detections:
@@ -144,7 +144,7 @@ def run_cli():
     print("Connected. Press Ctrl+C to pause and save state.\n")
     signal.signal(signal.SIGINT, _handle_sigint)
 
-    found = scan_grid(page, tracker)
+    found = scan_grid(page, tracker, speed="Normal")
 
     if tracker.is_complete():
         print(f"\n[main] Scan complete. Found {found} Mercenary Exchange(s) this session.")
