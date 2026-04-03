@@ -12,15 +12,18 @@ CDP_URL = f"http://localhost:{CDP_PORT}"
 # Pixels to pan per step (adjust based on your screen resolution and map zoom)
 PAN_STEP_X = 400       # horizontal pan distance per step (pixels)
 PAN_STEP_Y = 300       # vertical pan distance per step (pixels)
-PAN_DELAY = 0.6        # seconds to wait after each pan before screenshotting (let map tiles load)
-
 # Speed presets — selected via the GUI dropdown.
-# Each entry: (pan_delay, drag_duration, move_duration, pyautogui_pause)
+# Each entry: (min_wait, max_wait, drag_duration, move_duration, pyautogui_pause)
+#
+# min_wait:  guaranteed pause after the drag before comparing frames
+# max_wait:  ceiling — take the best frame if map hasn't settled by this time
+# The scanner self-adjusts per cell: water settles fast, cities wait longer.
 SPEED_PRESETS = {
-    "Slow":    (1.0,  0.40, 0.15, 0.05),
-    "Normal":  (0.6,  0.30, 0.10, 0.05),
-    "Fast":    (0.3,  0.10, 0.05, 0.02),
-    "Fastest": (0.15, 0.02, 0.00, 0.01),
+    #            min_w  max_w  drag   move  pause
+    "Slow":    ( 0.30,  3.0,  0.40,  0.15, 0.05 ),
+    "Normal":  ( 0.15,  2.0,  0.30,  0.10, 0.05 ),
+    "Fast":    ( 0.08,  1.5,  0.10,  0.05, 0.02 ),
+    "Fastest": ( 0.05,  1.0,  0.02,  0.00, 0.01 ),
 }
 
 # How many columns and rows to scan before stopping (set to None for continuous loop)

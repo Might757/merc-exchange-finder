@@ -99,6 +99,51 @@ def screenshot_numpy() -> np.ndarray:
     return arr[:, :, ::-1].copy()
 
 
+def _frame_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    """
+    Compare two BGR frames at 1/8 scale. Returns 0.0–1.0 similarity.
+    Downscaling makes comparison fast and ignores small animated sprites.
+    """
+    import cv2
+    if a.shape != b.shape:
+        return 0.0
+    small_a = cv2.resize(a, (a.shape[1] // 8, a.shape[0] // 8))
+    small_b = cv2.resize(b, (b.shape[1] // 8, b.shape[0] // 8))
+    diff = np.abs(small_a.astype(np.float32) - small_b.astype(np.float32))
+    return 1.0 - (diff.mean() / 255.0)
+
+
+def wait_for_stable_frame(
+    min_wait: float = 0.1,
+    max_wait: float = 2.0,
+    poll_interval: float = 0.08,
+    similarity_threshold: float = 0.97,
+) -> np.ndarray:
+    """
+    After a pan gesture, poll screenshots until two consecutive frames are
+    sufficiently similar — meaning map tiles have finished loading.
+
+    Water/empty areas settle almost instantly (fast scan).
+    Populated areas with many icons settle slower (scanner waits automatically).
+
+    Args:
+        min_wait:  guaranteed wait before comparing (lets drag animation finish)
+        max_wait:  give up and return best frame after this many seconds total
+        poll_interval: time between comparison screenshots
+        similarity_threshold: 0.97 catches tile loading while ignoring minor animations
+    """
+    time.sleep(min_wait)
+    prev = screenshot_numpy()
+    deadline = time.time() + (max_wait - min_wait)
+    while time.time() < deadline:
+        time.sleep(poll_interval)
+        curr = screenshot_numpy()
+        if _frame_similarity(prev, curr) >= similarity_threshold:
+            return curr
+        prev = curr
+    return prev  # timed out — return best available frame
+
+
 def get_page() -> Page:
     if _page is None:
         raise RuntimeError("Not connected. Call connect() first.")

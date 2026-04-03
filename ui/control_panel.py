@@ -292,9 +292,8 @@ class ControlPanel:
 
         # Apply speed preset
         preset_name = self._speed_var.get()
-        pan_delay, drag_dur, move_dur, pause_val = S.SPEED_PRESETS.get(
+        min_w, max_w, drag_dur, move_dur, pause_val = S.SPEED_PRESETS.get(
             preset_name, S.SPEED_PRESETS["Normal"])
-        S.PAN_DELAY = pan_delay
         nav.DRAG_DURATION = drag_dur
         nav.MOVE_DURATION = move_dur
         pyautogui.PAUSE = pause_val
@@ -351,8 +350,7 @@ class ControlPanel:
                         self._set_status(
                             f"Scanning ({r},{c})  [{s}/{t}]  — F9 to stop", self.GREEN))
 
-                    time.sleep(S.PAN_DELAY)
-                    frame = capture.screenshot_numpy()
+                    frame = capture.wait_for_stable_frame(min_wait=min_w, max_wait=max_w)
                     detections, raw_count = detect(frame)
 
                     if raw_count > 0 and not detections:
