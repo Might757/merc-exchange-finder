@@ -19,11 +19,11 @@ PAN_STEP_Y = 300       # vertical pan distance per step (pixels)
 # max_wait:  ceiling — take the best frame if map hasn't settled by this time
 # The scanner self-adjusts per cell: water settles fast, cities wait longer.
 SPEED_PRESETS = {
-    #            min_w  max_w  drag   move  pause
-    "Slow":    ( 0.30,  3.0,  0.40,  0.15, 0.05 ),
-    "Normal":  ( 0.15,  2.0,  0.30,  0.10, 0.05 ),
-    "Fast":    ( 0.08,  1.5,  0.10,  0.05, 0.02 ),
-    "Fastest": ( 0.05,  1.0,  0.02,  0.00, 0.01 ),
+    #              land_max  drag   move  pause
+    "Slow":    (   3.0,     0.40,  0.15, 0.05 ),
+    "Normal":  (   2.0,     0.30,  0.10, 0.05 ),
+    "Fast":    (   1.5,     0.10,  0.05, 0.02 ),
+    "Fastest": (   1.0,     0.02,  0.00, 0.01 ),
 }
 
 # How many columns and rows to scan before stopping (set to None for continuous loop)

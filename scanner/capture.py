@@ -99,48 +99,65 @@ def screenshot_numpy() -> np.ndarray:
     return arr[:, :, ::-1].copy()
 
 
-def _frame_similarity(a: np.ndarray, b: np.ndarray) -> float:
+# Pixel std dev (at 1/8 scale) below this → water / empty area.
+# Water in Total Battle is a near-uniform teal/blue (~std 3–8).
+# Land with buildings and icons is typically std 20–60+.
+_WATER_COMPLEXITY_THRESHOLD = 12.0
+
+
+def _frame_complexity(frame: np.ndarray) -> float:
     """
-    Compare two BGR frames at 1/8 scale. Returns 0.0–1.0 similarity.
-    Downscaling makes comparison fast and ignores small animated sprites.
+    Measure visual complexity of a BGR frame using pixel std dev at 1/8 scale.
+    Water/empty → low (~3–8). Land with icons/buildings → high (~20–60+).
     """
     import cv2
-    if a.shape != b.shape:
-        return 0.0
+    small = cv2.resize(frame, (frame.shape[1] // 8, frame.shape[0] // 8))
+    return float(small.astype(np.float32).std())
+
+
+def _frames_are_stable(a: np.ndarray, b: np.ndarray, threshold: float = 0.96) -> bool:
+    """True if two frames are sufficiently similar (tiles have stopped loading)."""
+    import cv2
     small_a = cv2.resize(a, (a.shape[1] // 8, a.shape[0] // 8))
     small_b = cv2.resize(b, (b.shape[1] // 8, b.shape[0] // 8))
     diff = np.abs(small_a.astype(np.float32) - small_b.astype(np.float32))
-    return 1.0 - (diff.mean() / 255.0)
+    return 1.0 - (diff.mean() / 255.0) >= threshold
 
 
 def wait_for_stable_frame(
-    min_wait: float = 0.1,
-    max_wait: float = 2.0,
-    poll_interval: float = 0.08,
-    similarity_threshold: float = 0.97,
+    drag_duration: float = 0.3,
+    land_max_wait: float = 2.0,
+    poll_interval: float = 0.12,
 ) -> np.ndarray:
     """
-    After a pan gesture, poll screenshots until two consecutive frames are
-    sufficiently similar — meaning map tiles have finished loading.
+    Two-phase wait after a map pan:
 
-    Water/empty areas settle almost instantly (fast scan).
-    Populated areas with many icons settle slower (scanner waits automatically).
+    Phase 1 — Drag settle (fixed):
+        Wait drag_duration + 0.1s. Guarantees the mouse gesture has physically
+        finished and the map has stopped moving before we look at it.
 
-    Args:
-        min_wait:  guaranteed wait before comparing (lets drag animation finish)
-        max_wait:  give up and return best frame after this many seconds total
-        poll_interval: time between comparison screenshots
-        similarity_threshold: 0.97 catches tile loading while ignoring minor animations
+    Phase 2 — Content detection (adaptive):
+        Measure visual complexity of the settled frame.
+        - Low complexity (water/empty) → return immediately. Fast.
+        - High complexity (land/city)  → compare consecutive frames until tiles
+          stop changing, or land_max_wait is exhausted. Correct.
     """
-    time.sleep(min_wait)
-    prev = screenshot_numpy()
-    deadline = time.time() + (max_wait - min_wait)
+    time.sleep(drag_duration + 0.1)
+    settled = screenshot_numpy()
+
+    if _frame_complexity(settled) < _WATER_COMPLEXITY_THRESHOLD:
+        return settled  # water — nothing to wait for
+
+    # Land: wait until rendering settles
+    prev = settled
+    deadline = time.time() + land_max_wait
     while time.time() < deadline:
         time.sleep(poll_interval)
         curr = screenshot_numpy()
-        if _frame_similarity(prev, curr) >= similarity_threshold:
+        if _frames_are_stable(prev, curr):
             return curr
         prev = curr
+
     return prev  # timed out — return best available frame
 
 

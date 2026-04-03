@@ -292,7 +292,7 @@ class ControlPanel:
 
         # Apply speed preset
         preset_name = self._speed_var.get()
-        min_w, max_w, drag_dur, move_dur, pause_val = S.SPEED_PRESETS.get(
+        land_max_w, drag_dur, move_dur, pause_val = S.SPEED_PRESETS.get(
             preset_name, S.SPEED_PRESETS["Normal"])
         nav.DRAG_DURATION = drag_dur
         nav.MOVE_DURATION = move_dur
@@ -350,7 +350,7 @@ class ControlPanel:
                         self._set_status(
                             f"Scanning ({r},{c})  [{s}/{t}]  — F9 to stop", self.GREEN))
 
-                    frame = capture.wait_for_stable_frame(min_wait=min_w, max_wait=max_w)
+                    frame = capture.wait_for_stable_frame(drag_duration=drag_dur, land_max_wait=land_max_w)
                     detections, raw_count = detect(frame)
 
                     if raw_count > 0 and not detections:

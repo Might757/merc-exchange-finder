@@ -46,7 +46,7 @@ def scan_grid(page, tracker: GridTracker, speed: str = "Normal"):
     """
     global _stop_flag
     found_count = 0
-    min_w, max_w, _, _, _ = SPEED_PRESETS.get(speed, SPEED_PRESETS["Normal"])
+    land_max_w, drag_dur, _, _ = SPEED_PRESETS.get(speed, SPEED_PRESETS["Normal"])
 
     cols = SCAN_COLS or 20
     rows = SCAN_ROWS or 15
@@ -69,7 +69,7 @@ def scan_grid(page, tracker: GridTracker, speed: str = "Normal"):
             print(f"[main] Scanning ({row},{col})  [{scanned}/{total}]  "
                   f"threshold={get_adaptive_threshold():.2f}")
 
-            frame = capture.wait_for_stable_frame(min_wait=min_w, max_wait=max_w)
+            frame = capture.wait_for_stable_frame(drag_duration=drag_dur, land_max_wait=land_max_w)
             detections, raw_count = detect(frame)
 
             if raw_count > 0 and not detections:
